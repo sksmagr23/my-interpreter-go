@@ -83,6 +83,14 @@ func main() {
 			} else {
 				fmt.Println("GREATER > null")
 			}
+		case '/':
+			if i+1 < len(contents) && contents[i+1] == '/' {
+				for i < len(contents) && contents[i] != '\n' {
+					i++
+				}
+			} else {
+				fmt.Println("SLASH / null")
+			}
 		default:
 			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber, char)
 			lexicalError = true
