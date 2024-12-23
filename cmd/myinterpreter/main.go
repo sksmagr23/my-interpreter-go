@@ -30,8 +30,11 @@ func main() {
 	lineNumber := 1
 	lexicalError := false
 
-	for _, char := range contents {
+	for i := 0; i < len(contents); i++ {
+		char := contents[i]
 		switch char {
+		case '\n':
+			lineNumber++
 		case '(':
 			fmt.Println("LEFT_PAREN ( null")
 		case ')':
@@ -52,6 +55,13 @@ func main() {
 			fmt.Println("SEMICOLON ; null")
 		case '*':
 			fmt.Println("STAR * null")
+		case '=':
+			if i+1 < len(contents) && contents[i+1] == '=' {
+				fmt.Println("EQUAL_EQUAL == null")
+				i++
+			} else {
+				fmt.Println("EQUAL = null")
+			}
 		default:
 			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber, char)
 			lexicalError = true
@@ -60,6 +70,6 @@ func main() {
 	fmt.Println("EOF  null")
 
 	if lexicalError {
-    os.Exit(65)
-    }
+		os.Exit(65)
+	}
 }
