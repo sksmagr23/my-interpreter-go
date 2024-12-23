@@ -62,6 +62,13 @@ func main() {
 			} else {
 				fmt.Println("EQUAL = null")
 			}
+		case '!':
+			if i+1 < len(contents) && contents[i+1] == '=' {
+				fmt.Println("BANG_EQUAL != null")
+				i++
+			} else {
+				fmt.Println("BANG ! null")
+			}
 		default:
 			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber, char)
 			lexicalError = true
