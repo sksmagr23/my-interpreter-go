@@ -27,6 +27,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	lineNumber := 1
+	lexicalError := false
+
 	for _, char := range contents {
 		switch char {
 		case '(':
@@ -49,7 +52,14 @@ func main() {
 			fmt.Println("SEMICOLON ; null")
 		case '*':
 			fmt.Println("STAR * null")
+		default:
+			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber, char)
+			lexicalError = true
 		}
 	}
 	fmt.Println("EOF  null")
+
+	if lexicalError {
+    os.Exit(65)
+    }
 }
