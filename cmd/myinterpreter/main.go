@@ -35,6 +35,7 @@ func main() {
 		switch char {
 		case '\n':
 			lineNumber++
+		case ' ', '\r', '\t':
 		case '(':
 			fmt.Println("LEFT_PAREN ( null")
 		case ')':
