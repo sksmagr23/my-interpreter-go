@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"unicode"
 )
 
 func main() {
@@ -37,7 +38,7 @@ func main() {
 		case '\n':
 			line++
 		case ' ', '\r', '\t':
-			// Ignore whitespace characters
+			// Ignore whitespace
 		case '(':
 			tokens = append(tokens, "LEFT_PAREN ( null")
 		case ')':
@@ -106,16 +107,38 @@ func main() {
 			if i+1 >= len(contents) {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unterminated string.", line))
 			} else {
-				i++ 
+				i++
 				lex := string(contents[start : i+1])
-				lit := string(contents[start+1 : i]) 
+				lit := string(contents[start+1 : i])
 				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
 			}
 		default:
-			errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
-			if char == '\n' {
-				line++
+			if unicode.IsDigit(rune(char)) {
+				start := i
+				for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
+					i++
+				}
+				if i+1 < len(contents) && contents[i+1] == '.' {
+					i++
+					if i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
+						for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
+							i++
+						}
+					} else {
+						errors = append(errors, fmt.Sprintf("[line %d] Error: Invalid number format.", line))
+						continue
+					}
+				}
+				lexeme := string(contents[start : i+1])
+				literal := fmt.Sprintf("%s.0", lexeme)
+				if string(contents[start:i+1]) != lexeme { 
+					literal = lexeme
+				}
+				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lexeme, literal))
+			} else {
+				errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
 			}
+
 		}
 	}
 
