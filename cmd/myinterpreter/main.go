@@ -16,6 +16,7 @@ func main() {
 	}
 
 	command := os.Args[1]
+
 	if command != "tokenize" {
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
@@ -23,16 +24,13 @@ func main() {
 
 	filename := os.Args[2]
 	contents, err := os.ReadFile(filename)
+	n := len(contents)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		os.Exit(1)
 	}
 
-	processContents(string(contents))
-}
-
-func processContents(contents string) {
-	reserved := map[string]string{
+	var reserved = map[string]string{
 		"and":    "AND",
 		"class":  "CLASS",
 		"else":   "ELSE",
@@ -52,162 +50,144 @@ func processContents(contents string) {
 	}
 
 	line := 1
-	tokens := []string{}
-	errors := []string{}
-	i := 0
-	n := len(contents)
+	var errors []string
+	var tokens []string
 
-	for i < n {
+	for i := 0; i < n; i++ {
 		char := contents[i]
 		switch char {
 		case '\n':
 			line++
 		case ' ', '\r', '\t':
 			// Ignore whitespace
-		case '(', ')', '{', '}', ',', '.', '-', '+', ';', '*':
-			tokens = append(tokens, singleCharToken(char))
-		case '=', '!', '<', '>':
-			i, tokens = appendTwoCharTokens(i, contents, char, tokens)
+		case '(':
+			tokens = append(tokens, "LEFT_PAREN ( null")
+		case ')':
+			tokens = append(tokens, "RIGHT_PAREN ) null")
+		case '{':
+			tokens = append(tokens, "LEFT_BRACE { null")
+		case '}':
+			tokens = append(tokens, "RIGHT_BRACE } null")
+		case ',':
+			tokens = append(tokens, "COMMA , null")
+		case '.':
+			tokens = append(tokens, "DOT . null")
+		case '-':
+			tokens = append(tokens, "MINUS - null")
+		case '+':
+			tokens = append(tokens, "PLUS + null")
+		case ';':
+			tokens = append(tokens, "SEMICOLON ; null")
+		case '*':
+			tokens = append(tokens, "STAR * null")
+		case '=':
+			if i+1 < n && contents[i+1] == '=' {
+				tokens = append(tokens, "EQUAL_EQUAL == null")
+				i++
+			} else {
+				tokens = append(tokens, "EQUAL = null")
+			}
+		case '!':
+			if i+1 < n && contents[i+1] == '=' {
+				tokens = append(tokens, "BANG_EQUAL != null")
+				i++
+			} else {
+				tokens = append(tokens, "BANG ! null")
+			}
+		case '<':
+			if i+1 < n && contents[i+1] == '=' {
+				tokens = append(tokens, "LESS_EQUAL <= null")
+				i++
+			} else {
+				tokens = append(tokens, "LESS < null")
+			}
+		case '>':
+			if i+1 < n && contents[i+1] == '=' {
+				tokens = append(tokens, "GREATER_EQUAL >= null")
+				i++
+			} else {
+				tokens = append(tokens, "GREATER > null")
+			}
 		case '/':
-			i = handleSlash(i, contents, &tokens)
+			if i+1 < n && contents[i+1] == '/' {
+				for i < n && contents[i] != '\n' {
+					i++
+				}
+				i--
+			} else {
+				tokens = append(tokens, "SLASH / null")
+			}
 		case '"':
-			i, errors = handleString(i, contents, line, &tokens, errors)
+			start := i
+			for i+1 < n && contents[i+1] != '"' {
+				if contents[i+1] == '\n' {
+					line++
+				}
+				i++
+			}
+			if i+1 >= n {
+				errors = append(errors, fmt.Sprintf("[line %d] Error: Unterminated string.", line))
+			} else {
+				i++
+				lex := string(contents[start : i+1])
+				lit := string(contents[start+1 : i])
+				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
+			}
 		default:
 			if unicode.IsLetter(rune(char)) || char == '_' {
-				i, tokens = handleIdentifier(i, contents, reserved, tokens)
+				start := i
+				for i+1 < n && (unicode.IsLetter(rune(contents[i+1])) || unicode.IsDigit(rune(contents[i+1])) || contents[i+1] == '_') {
+					i++
+				}
+				lex := string(contents[start : i+1])
+
+				if tokenType, isReserved := reserved[lex]; isReserved {
+					tokens = append(tokens, fmt.Sprintf("%s %s null", tokenType, lex))
+				} else {
+					tokens = append(tokens, fmt.Sprintf("IDENTIFIER %s null", lex))
+				}
 			} else if unicode.IsDigit(rune(char)) {
-				i, tokens = handleNumber(i, contents, tokens)
+				start := i
+				isFloat := false
+
+				for i+1 < n && unicode.IsDigit(rune(contents[i+1])) {
+					i++
+				}
+
+				if i+1 < n && contents[i+1] == '.' {
+					isFloat = true
+					i++
+					for i+1 < n && unicode.IsDigit(rune(contents[i+1])) {
+						i++
+					}
+				}
+
+				lex := string(contents[start : i+1])
+
+				var lit string
+				if isFloat {
+					lexValue := lex
+					if dotIndex := strings.Index(lexValue, "."); dotIndex != -1 {
+						integerPart := lexValue[:dotIndex]
+						fractionalPart := strings.TrimRight(lexValue[dotIndex+1:], "0")
+
+						if fractionalPart == "" {
+							lit = fmt.Sprintf("%s.0", integerPart)
+						} else {
+							lit = fmt.Sprintf("%s.%s", integerPart, fractionalPart)
+						}
+					}
+				} else {
+					lit = fmt.Sprintf("%s.0", lex)
+				}
+
+				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lex, lit))
 			} else {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
 			}
 		}
-		i++
 	}
 
-	printErrorsAndTokens(errors, tokens)
-	if len(errors) > 0 {
-		os.Exit(65)
-	}
-}
-
-func singleCharToken(char byte) string {
-	return map[byte]string{
-		'(': "LEFT_PAREN ( null",
-		')': "RIGHT_PAREN ) null",
-		'{': "LEFT_BRACE { null",
-		'}': "RIGHT_BRACE } null",
-		',': "COMMA , null",
-		'.': "DOT . null",
-		'-': "MINUS - null",
-		'+': "PLUS + null",
-		';': "SEMICOLON ; null",
-		'*': "STAR * null",
-	}[char]
-}
-
-func appendTwoCharTokens(i int, contents string, char byte, tokens []string) (int, []string) {
-	nextChar := map[byte]string{
-		'=': "EQUAL_EQUAL",
-		'!': "BANG_EQUAL",
-		'<': "LESS_EQUAL",
-		'>': "GREATER_EQUAL",
-	}[char]
-
-	token := map[byte]string{
-		'=': "EQUAL",
-		'!': "BANG",
-		'<': "LESS",
-		'>': "GREATER",
-	}[char]
-
-	if i+1 < len(contents) && contents[i+1] == '=' {
-		tokens = append(tokens, fmt.Sprintf("%s %c= null", nextChar, char))
-		i++
-	} else {
-		tokens = append(tokens, fmt.Sprintf("%s %c null", token, char))
-	}
-
-	return i, tokens
-}
-
-func handleSlash(i int, contents string, tokens *[]string) int {
-	if i+1 < len(contents) && contents[i+1] == '/' {
-		for i < len(contents) && contents[i] != '\n' {
-			i++
-		}
-	} else {
-		*tokens = append(*tokens, "SLASH / null")
-	}
-	return i
-}
-
-func handleString(i int, contents string, line int, tokens *[]string, errors []string) (int, []string) {
-	start := i
-	for i+1 < len(contents) && contents[i+1] != '"' {
-		if contents[i+1] == '\n' {
-			line++
-		}
-		i++
-	}
-
-	if i+1 >= len(contents) {
-		errors = append(errors, fmt.Sprintf("[line %d] Error: Unterminated string.", line))
-	} else {
-		i++
-		lex := string(contents[start : i+1])
-		lit := string(contents[start+1 : i])
-		*tokens = append(*tokens, fmt.Sprintf("STRING %s %s", lex, lit))
-	}
-
-	return i, errors
-}
-
-func handleIdentifier(i int, contents string, reserved map[string]string, tokens []string) (int, []string) {
-	start := i
-	for i+1 < len(contents) && (unicode.IsLetter(rune(contents[i+1])) || unicode.IsDigit(rune(contents[i+1])) || contents[i+1] == '_') {
-		i++
-	}
-	lex := string(contents[start : i+1])
-	if tokenType, isReserved := reserved[lex]; isReserved {
-		tokens = append(tokens, fmt.Sprintf("%s %s null", tokenType, lex))
-	} else {
-		tokens = append(tokens, fmt.Sprintf("IDENTIFIER %s null", lex))
-	}
-	return i, tokens
-}
-
-func handleNumber(i int, contents string, tokens []string) (int, []string) {
-	start := i
-	isFloat := false
-
-	for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
-		i++
-	}
-
-	if i+1 < len(contents) && contents[i+1] == '.' {
-		isFloat = true
-		i++
-		for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
-			i++
-		}
-	}
-
-	lex := string(contents[start : i+1])
-	var lit string
-	if isFloat {
-		lit = strings.TrimRight(lex, "0")
-		if strings.HasSuffix(lit, ".") {
-			lit += "0"
-		}
-	} else {
-		lit = fmt.Sprintf("%s.0", lex)
-	}
-
-	tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lex, lit))
-	return i, tokens
-}
-
-func printErrorsAndTokens(errors, tokens []string) {
 	for _, e := range errors {
 		fmt.Fprintln(os.Stderr, e)
 	}
@@ -215,4 +195,8 @@ func printErrorsAndTokens(errors, tokens []string) {
 		fmt.Println(t)
 	}
 	fmt.Println("EOF  null")
+
+	if len(errors) > 0 {
+		os.Exit(65)
+	}
 }
