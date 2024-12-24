@@ -24,6 +24,7 @@ func main() {
 
 	filename := os.Args[2]
 	contents, err := os.ReadFile(filename)
+	n := len(contents)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
 		os.Exit(1)
@@ -33,7 +34,7 @@ func main() {
 	var errors []string
 	var tokens []string
 
-	for i := 0; i < len(contents); i++ {
+	for i := 0; i < n; i++ {
 		char := contents[i]
 		switch char {
 		case '\n':
@@ -61,36 +62,36 @@ func main() {
 		case '*':
 			tokens = append(tokens, "STAR * null")
 		case '=':
-			if i+1 < len(contents) && contents[i+1] == '=' {
+			if i+1 < n && contents[i+1] == '=' {
 				tokens = append(tokens, "EQUAL_EQUAL == null")
 				i++
 			} else {
 				tokens = append(tokens, "EQUAL = null")
 			}
 		case '!':
-			if i+1 < len(contents) && contents[i+1] == '=' {
+			if i+1 < n && contents[i+1] == '=' {
 				tokens = append(tokens, "BANG_EQUAL != null")
 				i++
 			} else {
 				tokens = append(tokens, "BANG ! null")
 			}
 		case '<':
-			if i+1 < len(contents) && contents[i+1] == '=' {
+			if i+1 < n && contents[i+1] == '=' {
 				tokens = append(tokens, "LESS_EQUAL <= null")
 				i++
 			} else {
 				tokens = append(tokens, "LESS < null")
 			}
 		case '>':
-			if i+1 < len(contents) && contents[i+1] == '=' {
+			if i+1 < n && contents[i+1] == '=' {
 				tokens = append(tokens, "GREATER_EQUAL >= null")
 				i++
 			} else {
 				tokens = append(tokens, "GREATER > null")
 			}
 		case '/':
-			if i+1 < len(contents) && contents[i+1] == '/' {
-				for i < len(contents) && contents[i] != '\n' {
+			if i+1 < n && contents[i+1] == '/' {
+				for i < n && contents[i] != '\n' {
 					i++
 				}
 				i--
@@ -99,13 +100,13 @@ func main() {
 			}
 		case '"':
 			start := i
-			for i+1 < len(contents) && contents[i+1] != '"' {
+			for i+1 < n && contents[i+1] != '"' {
 				if contents[i+1] == '\n' {
 					line++
 				}
 				i++
 			}
-			if i+1 >= len(contents) {
+			if i+1 >= n {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unterminated string.", line))
 			} else {
 				i++
@@ -114,45 +115,46 @@ func main() {
 				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
 			}
 		default:
-			if unicode.IsDigit(rune(char)) {
+			if unicode.IsLetter(rune(char)) || char == '_' {
+				start := i
+				for i+1 < n && (unicode.IsLetter(rune(contents[i+1])) || unicode.IsDigit(rune(contents[i+1])) || contents[i+1] == '_') {
+					i++
+				}
+				lexeme := string(contents[start : i+1])
+				tokens = append(tokens, fmt.Sprintf("IDENTIFIER %s null", lexeme))
+			} else if unicode.IsDigit(rune(char)) {
 				start := i
 				isFloat := false
 
-				// Consume the integer part
-				for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
+				for i+1 < n && unicode.IsDigit(rune(contents[i+1])) {
 					i++
 				}
 
-				// Check for a decimal point
-				if i+1 < len(contents) && contents[i+1] == '.' {
+				if i+1 < n && contents[i+1] == '.' {
 					isFloat = true
 					i++
-					// Consume the fractional part
-					for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
+					for i+1 < n && unicode.IsDigit(rune(contents[i+1])) {
 						i++
 					}
 				}
 
-				// Extract the lexeme
 				lexeme := string(contents[start : i+1])
 
 				var literal string
 				if isFloat {
-					// Handle floats
 					lexemeValue := lexeme
 					if dotIndex := strings.Index(lexemeValue, "."); dotIndex != -1 {
 						integerPart := lexemeValue[:dotIndex]
 						fractionalPart := strings.TrimRight(lexemeValue[dotIndex+1:], "0")
 
 						if fractionalPart == "" {
-							literal = fmt.Sprintf("%s.0", integerPart) // e.g., "13.0000" -> "13.0"
+							literal = fmt.Sprintf("%s.0", integerPart)
 						} else {
-							literal = fmt.Sprintf("%s.%s", integerPart, fractionalPart) // e.g., "24.46" -> "24.46"
+							literal = fmt.Sprintf("%s.%s", integerPart, fractionalPart)
 						}
 					}
 				} else {
-					// Handle integers
-					literal = fmt.Sprintf("%s.0", lexeme) // e.g., "42" -> "42.0"
+					literal = fmt.Sprintf("%s.0", lexeme)
 				}
 
 				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lexeme, literal))
