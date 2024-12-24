@@ -30,7 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	var reservedWords = map[string]string{
+	var reserved = map[string]string{
 		"and":    "AND",
 		"class":  "CLASS",
 		"else":   "ELSE",
@@ -139,12 +139,12 @@ func main() {
 				for i+1 < n && (unicode.IsLetter(rune(contents[i+1])) || unicode.IsDigit(rune(contents[i+1])) || contents[i+1] == '_') {
 					i++
 				}
-				lexeme := string(contents[start : i+1])
+				lex := string(contents[start : i+1])
 
-				if tokenType, isReserved := reservedWords[lexeme]; isReserved {
-					tokens = append(tokens, fmt.Sprintf("%s %s null", tokenType, lexeme))
+				if tokenType, isReserved := reserved[lex]; isReserved {
+					tokens = append(tokens, fmt.Sprintf("%s %s null", tokenType, lex))
 				} else {
-					tokens = append(tokens, fmt.Sprintf("IDENTIFIER %s null", lexeme))
+					tokens = append(tokens, fmt.Sprintf("IDENTIFIER %s null", lex))
 				}
 			} else if unicode.IsDigit(rune(char)) {
 				start := i
@@ -162,30 +162,29 @@ func main() {
 					}
 				}
 
-				lexeme := string(contents[start : i+1])
+				lex := string(contents[start : i+1])
 
-				var literal string
+				var lit string
 				if isFloat {
-					lexemeValue := lexeme
-					if dotIndex := strings.Index(lexemeValue, "."); dotIndex != -1 {
-						integerPart := lexemeValue[:dotIndex]
-						fractionalPart := strings.TrimRight(lexemeValue[dotIndex+1:], "0")
+					lexValue := lex
+					if dotIndex := strings.Index(lexValue, "."); dotIndex != -1 {
+						integerPart := lexValue[:dotIndex]
+						fractionalPart := strings.TrimRight(lexValue[dotIndex+1:], "0")
 
 						if fractionalPart == "" {
-							literal = fmt.Sprintf("%s.0", integerPart)
+							lit = fmt.Sprintf("%s.0", integerPart)
 						} else {
-							literal = fmt.Sprintf("%s.%s", integerPart, fractionalPart)
+							lit = fmt.Sprintf("%s.%s", integerPart, fractionalPart)
 						}
 					}
 				} else {
-					literal = fmt.Sprintf("%s.0", lexeme)
+					lit = fmt.Sprintf("%s.0", lex)
 				}
 
-				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lexeme, literal))
+				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lex, lit))
 			} else {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
 			}
-
 		}
 	}
 
