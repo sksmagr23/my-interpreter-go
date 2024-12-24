@@ -157,24 +157,29 @@ func handleSlash(input string, i int, tokens *[]string, line int) int {
 }
 
 func handleString(input string, i int, tokens *[]string, line int) (int, string) {
-	start := i
-	n := len(input)
-	for i+1 < n && input[i+1] != '"' {
-		if input[i+1] == '\n' {
-			line++
-		}
-		i++
-	}
+    start := i
+    n := len(input)
+    for i+1 < n && input[i+1] != '"' {
+        if input[i+1] == '\\' && i+2 < n && (input[i+2] == '"' || input[i+2] == '\\') {
+            i++
+        }
+        if input[i+1] == '\n' {
+            line++
+        }
+        i++
+    }
 
-	if i+1 >= n {
-		return i, fmt.Sprintf("[line %d] Error: Unterminated string.", line)
-	}
-	i++
-	lex := input[start : i+1]
-	lit := input[start+1 : i]
-	*tokens = append(*tokens, fmt.Sprintf("STRING %s %s", lex, lit))
-	return i, ""
+    if i+1 >= n {
+        return i, fmt.Sprintf("[line %d] Error: Unterminated string.", line)
+    }
+
+    i++ 
+    lex := input[start : i+1]
+    lit := input[start+1 : i] 
+    *tokens = append(*tokens, fmt.Sprintf("STRING %s %s", lex, lit))
+    return i, ""
 }
+
 
 func handleIdentifier(input string, i int, tokens *[]string, reserved map[string]string) int {
 	start := i
