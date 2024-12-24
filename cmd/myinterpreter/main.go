@@ -81,9 +81,6 @@ func processContents(contents string) {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
 			}
 		}
-		if char == '\n' {
-			line++ // Increment after processing newline
-		}
 		i++
 	}
 
