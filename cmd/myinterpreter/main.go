@@ -115,25 +115,28 @@ func main() {
 		default:
 			if unicode.IsDigit(rune(char)) {
 				start := i
+				isFloat := false
+
 				for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
 					i++
 				}
+
 				if i+1 < len(contents) && contents[i+1] == '.' {
+					isFloat = true
 					i++
-					if i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
-						for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
-							i++
-						}
-					} else {
-						errors = append(errors, fmt.Sprintf("[line %d] Error: Invalid number format.", line))
-						continue
+					for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
+						i++
 					}
 				}
+
 				lexeme := string(contents[start : i+1])
-				literal := fmt.Sprintf("%s.0", lexeme)
-				if string(contents[start:i+1]) != lexeme { 
+				var literal string
+				if isFloat {
 					literal = lexeme
+				} else {
+					literal = fmt.Sprintf("%s.0", lexeme)
 				}
+
 				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lexeme, literal))
 			} else {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
