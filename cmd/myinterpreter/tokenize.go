@@ -108,8 +108,8 @@ func Tokenize(contents string) []string {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unterminated string.", line))
 			} else {
 				i++
-				lex := string(contents[start : i+1])
-				lit := string(contents[start+1 : i])
+				lex := string(contents[start : i+1]) 
+				lit := string(contents[start+1 : i]) 
 				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
 			}
 		default:
@@ -170,7 +170,7 @@ func Tokenize(contents string) []string {
 	for _, e := range errors {
 		fmt.Fprintln(os.Stderr, e)
 	}
-	
+
 	if len(errors) > 0 {
 		os.Exit(65)
 	}
