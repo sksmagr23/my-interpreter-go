@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"unicode"
 )
 
@@ -135,12 +136,23 @@ func main() {
 				// Extract the lexeme
 				lexeme := string(contents[start : i+1])
 
-				// For float numbers, we just use the lexeme as is for the literal value
 				var literal string
 				if isFloat {
-					literal = lexeme // Directly use the lexeme for floats
+					// Handle floats
+					lexemeValue := lexeme
+					if dotIndex := strings.Index(lexemeValue, "."); dotIndex != -1 {
+						integerPart := lexemeValue[:dotIndex]
+						fractionalPart := strings.TrimRight(lexemeValue[dotIndex+1:], "0")
+
+						if fractionalPart == "" {
+							literal = fmt.Sprintf("%s.0", integerPart) // e.g., "13.0000" -> "13.0"
+						} else {
+							literal = fmt.Sprintf("%s.%s", integerPart, fractionalPart) // e.g., "24.46" -> "24.46"
+						}
+					}
 				} else {
-					literal = fmt.Sprintf("%s.0", lexeme) // Append ".0" for integers
+					// Handle integers
+					literal = fmt.Sprintf("%s.0", lexeme) // e.g., "42" -> "42.0"
 				}
 
 				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lexeme, literal))
