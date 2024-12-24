@@ -117,33 +117,39 @@ func main() {
 				start := i
 				isFloat := false
 
+				// Consume the integer part
 				for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
 					i++
 				}
 
+				// Check for a decimal point
 				if i+1 < len(contents) && contents[i+1] == '.' {
 					isFloat = true
 					i++
+					// Consume the fractional part
 					for i+1 < len(contents) && unicode.IsDigit(rune(contents[i+1])) {
 						i++
 					}
 				}
 
+				// Extract the lexeme
 				lexeme := string(contents[start : i+1])
 
+				// Normalize the literal
 				var literal string
 				if isFloat {
 					var floatValue float64
-					fmt.Sscanf(lexeme, "%f", &floatValue)
-					literal = fmt.Sprintf("%g", floatValue)
+					fmt.Sscanf(lexeme, "%f", &floatValue)     // Parse and reformat as float
+					literal = fmt.Sprintf("%.1f", floatValue) // Ensure at least one digit after the decimal
 				} else {
-					literal = fmt.Sprintf("%s.0", lexeme)
+					literal = fmt.Sprintf("%s.0", lexeme) // Append ".0" for integers
 				}
 
 				tokens = append(tokens, fmt.Sprintf("NUMBER %s %s", lexeme, literal))
 			} else {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
 			}
+
 		}
 	}
 
