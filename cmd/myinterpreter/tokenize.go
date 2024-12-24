@@ -98,20 +98,33 @@ func Tokenize(contents string) []string {
 			}
 		case '"':
 			start := i
+			terminated := false
 			for i+1 < n && contents[i+1] != '"' {
 				if contents[i+1] == '\n' {
 					line++
 				}
 				i++
 			}
-			if i+1 >= n {
-				errors = append(errors, fmt.Sprintf("[line %d] Error: Unterminated string.", line))
-			} else {
-				i++
-				lex := string(contents[start : i+1]) 
-				lit := string(contents[start+1 : i]) 
-				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
+
+			// Check if the string was properly terminated
+			if i+1 < n && contents[i+1] == '"' {
+				terminated = true
+				i++ // Skip the closing quote
 			}
+
+			// Tokenize the valid part (only if it's terminated)
+			if terminated {
+				lex := string(contents[start : i+1]) // This includes both quotes.
+				lit := string(contents[start+1 : i]) // The content inside the quotes.
+				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
+			} else {
+				// If the string is not terminated, simply stop processing further and ignore it.
+				lex := string(contents[start:i])     // Only include the opened quote, not closed one
+				lit := string(contents[start+1 : i]) // Content inside the quotes (without closing)
+				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
+				return tokens // Stop here, ignore remaining input.
+			}
+
 		default:
 			if unicode.IsLetter(rune(char)) || char == '_' {
 				start := i
