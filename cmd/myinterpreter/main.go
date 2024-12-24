@@ -28,8 +28,10 @@ func main() {
 	}
 
 	lineNumber := 1
-	lexicalError := false
+	var errors []string
+	var tokens []string
 
+	// First pass: Collect all errors
 	for i := 0; i < len(contents); i++ {
 		char := contents[i]
 		switch char {
@@ -37,52 +39,52 @@ func main() {
 			lineNumber++
 		case ' ', '\r', '\t':
 		case '(':
-			fmt.Println("LEFT_PAREN ( null")
+			tokens = append(tokens, "LEFT_PAREN ( null")
 		case ')':
-			fmt.Println("RIGHT_PAREN ) null")
+			tokens = append(tokens, "RIGHT_PAREN ) null")
 		case '{':
-			fmt.Println("LEFT_BRACE { null")
+			tokens = append(tokens, "LEFT_BRACE { null")
 		case '}':
-			fmt.Println("RIGHT_BRACE } null")
+			tokens = append(tokens, "RIGHT_BRACE } null")
 		case ',':
-			fmt.Println("COMMA , null")
+			tokens = append(tokens, "COMMA , null")
 		case '.':
-			fmt.Println("DOT . null")
+			tokens = append(tokens, "DOT . null")
 		case '-':
-			fmt.Println("MINUS - null")
+			tokens = append(tokens, "MINUS - null")
 		case '+':
-			fmt.Println("PLUS + null")
+			tokens = append(tokens, "PLUS + null")
 		case ';':
-			fmt.Println("SEMICOLON ; null")
+			tokens = append(tokens, "SEMICOLON ; null")
 		case '*':
-			fmt.Println("STAR * null")
+			tokens = append(tokens, "STAR * null")
 		case '=':
 			if i+1 < len(contents) && contents[i+1] == '=' {
-				fmt.Println("EQUAL_EQUAL == null")
+				tokens = append(tokens, "EQUAL_EQUAL == null")
 				i++
 			} else {
-				fmt.Println("EQUAL = null")
+				tokens = append(tokens, "EQUAL = null")
 			}
 		case '!':
 			if i+1 < len(contents) && contents[i+1] == '=' {
-				fmt.Println("BANG_EQUAL != null")
+				tokens = append(tokens, "BANG_EQUAL != null")
 				i++
 			} else {
-				fmt.Println("BANG ! null")
+				tokens = append(tokens, "BANG ! null")
 			}
 		case '<':
 			if i+1 < len(contents) && contents[i+1] == '=' {
-				fmt.Println("LESS_EQUAL <= null")
+				tokens = append(tokens, "LESS_EQUAL <= null")
 				i++
 			} else {
-				fmt.Println("LESS < null")
+				tokens = append(tokens, "LESS < null")
 			}
 		case '>':
 			if i+1 < len(contents) && contents[i+1] == '=' {
-				fmt.Println("GREATER_EQUAL >= null")
+				tokens = append(tokens, "GREATER_EQUAL >= null")
 				i++
 			} else {
-				fmt.Println("GREATER > null")
+				tokens = append(tokens, "GREATER > null")
 			}
 		case '/':
 			if i+1 < len(contents) && contents[i+1] == '/' {
@@ -90,16 +92,24 @@ func main() {
 					i++
 				}
 			} else {
-				fmt.Println("SLASH / null")
+				tokens = append(tokens, "SLASH / null")
 			}
 		default:
-			fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber, char)
-			lexicalError = true
+			errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", lineNumber, char))
 		}
 	}
+
+	for _, e := range errors {
+		fmt.Fprintln(os.Stderr, e)
+	}
+
+	for _, t := range tokens {
+		fmt.Println(t)
+	}
+
 	fmt.Println("EOF  null")
 
-	if lexicalError {
+	if len(errors) > 0 {
 		os.Exit(65)
 	}
 }
