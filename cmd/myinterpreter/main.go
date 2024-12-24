@@ -130,9 +130,12 @@ func main() {
 				}
 
 				lexeme := string(contents[start : i+1])
+
 				var literal string
 				if isFloat {
-					literal = lexeme
+					var floatValue float64
+					fmt.Sscanf(lexeme, "%f", &floatValue)
+					literal = fmt.Sprintf("%g", floatValue)
 				} else {
 					literal = fmt.Sprintf("%s.0", lexeme)
 				}
@@ -141,18 +144,15 @@ func main() {
 			} else {
 				errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
 			}
-
 		}
 	}
 
 	for _, e := range errors {
 		fmt.Fprintln(os.Stderr, e)
 	}
-
 	for _, t := range tokens {
 		fmt.Println(t)
 	}
-
 	fmt.Println("EOF  null")
 
 	if len(errors) > 0 {
