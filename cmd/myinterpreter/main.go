@@ -121,7 +121,7 @@ func appendTwoCharTokens(i int, contents string, char byte, tokens []string) (in
 	}[char]
 
 	if i+1 < len(contents) && contents[i+1] == '=' {
-		tokens = append(tokens, fmt.Sprintf("%s = null", nextChar))
+		tokens = append(tokens, fmt.Sprintf("%s == null", nextChar))
 		i++
 	} else {
 		tokens = append(tokens, fmt.Sprintf("%s %c null", token, char))
