@@ -30,6 +30,25 @@ func main() {
 		os.Exit(1)
 	}
 
+	var reservedWords = map[string]string{
+		"and":    "AND",
+		"class":  "CLASS",
+		"else":   "ELSE",
+		"false":  "FALSE",
+		"for":    "FOR",
+		"fun":    "FUN",
+		"if":     "IF",
+		"nil":    "NIL",
+		"or":     "OR",
+		"print":  "PRINT",
+		"return": "RETURN",
+		"super":  "SUPER",
+		"this":   "THIS",
+		"true":   "TRUE",
+		"var":    "VAR",
+		"while":  "WHILE",
+	}
+
 	line := 1
 	var errors []string
 	var tokens []string
@@ -121,7 +140,12 @@ func main() {
 					i++
 				}
 				lexeme := string(contents[start : i+1])
-				tokens = append(tokens, fmt.Sprintf("IDENTIFIER %s null", lexeme))
+
+				if tokenType, isReserved := reservedWords[lexeme]; isReserved {
+					tokens = append(tokens, fmt.Sprintf("%s %s null", tokenType, lexeme))
+				} else {
+					tokens = append(tokens, fmt.Sprintf("IDENTIFIER %s null", lexeme))
+				}
 			} else if unicode.IsDigit(rune(char)) {
 				start := i
 				isFloat := false
