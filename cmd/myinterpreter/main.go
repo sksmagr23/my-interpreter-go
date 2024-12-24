@@ -135,12 +135,10 @@ func main() {
 				// Extract the lexeme
 				lexeme := string(contents[start : i+1])
 
-				// Normalize the literal
+				// For float numbers, we just use the lexeme as is for the literal value
 				var literal string
 				if isFloat {
-					var floatValue float64
-					fmt.Sscanf(lexeme, "%f", &floatValue)     // Parse and reformat as float
-					literal = fmt.Sprintf("%.1f", floatValue) // Ensure at least one digit after the decimal
+					literal = lexeme // Directly use the lexeme for floats
 				} else {
 					literal = fmt.Sprintf("%s.0", lexeme) // Append ".0" for integers
 				}
