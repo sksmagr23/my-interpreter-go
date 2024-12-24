@@ -38,6 +38,7 @@ func main() {
 		case '\n':
 			lineNumber++
 		case ' ', '\r', '\t':
+			// Ignore whitespace characters
 		case '(':
 			tokens = append(tokens, "LEFT_PAREN ( null")
 		case ')':
@@ -91,11 +92,15 @@ func main() {
 				for i < len(contents) && contents[i] != '\n' {
 					i++
 				}
+				i--
 			} else {
 				tokens = append(tokens, "SLASH / null")
 			}
 		default:
 			errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", lineNumber, char))
+			if char == '\n' {
+				lineNumber++
+			}
 		}
 	}
 
