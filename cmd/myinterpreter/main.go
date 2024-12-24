@@ -27,16 +27,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	lineNumber := 1
+	line := 1
 	var errors []string
 	var tokens []string
 
-	// First pass: Collect all errors
 	for i := 0; i < len(contents); i++ {
 		char := contents[i]
 		switch char {
 		case '\n':
-			lineNumber++
+			line++
 		case ' ', '\r', '\t':
 			// Ignore whitespace characters
 		case '(':
@@ -96,10 +95,26 @@ func main() {
 			} else {
 				tokens = append(tokens, "SLASH / null")
 			}
+		case '"':
+			start := i
+			for i+1 < len(contents) && contents[i+1] != '"' {
+				if contents[i+1] == '\n' {
+					line++
+				}
+				i++
+			}
+			if i+1 >= len(contents) {
+				errors = append(errors, fmt.Sprintf("[line %d] Error: Unterminated string.", line))
+			} else {
+				i++ 
+				lex := string(contents[start : i+1])
+				lit := string(contents[start+1 : i]) 
+				tokens = append(tokens, fmt.Sprintf("STRING %s %s", lex, lit))
+			}
 		default:
-			errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", lineNumber, char))
+			errors = append(errors, fmt.Sprintf("[line %d] Error: Unexpected character: %c", line, char))
 			if char == '\n' {
-				lineNumber++
+				line++
 			}
 		}
 	}
